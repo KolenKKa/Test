@@ -3,235 +3,730 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Game Shop</title>
+    <title>Game Shop - Донат в игры</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         :root {
-            --bg-color: #1c1c1e;
-            --card-bg: #2c2c2e;
+            --bg-primary: #0f0f1a;
+            --bg-secondary: #1a1a2e;
+            --bg-card: #16213e;
+            --accent-purple: #7c3aed;
+            --accent-blue: #3b82f6;
+            --accent-pink: #ec4899;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
             --text-primary: #ffffff;
-            --text-secondary: #8e8e93;
-            --accent: #007aff;
-            --danger: #ff3b30;
+            --text-secondary: #a0aec0;
+            --border-color: #2d3748;
+            --success: #48bb78;
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
         }
 
         body {
-            margin: 0;
-            padding: 16px;
-            background-color: var(--bg-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--bg-primary);
             color: var(--text-primary);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            -webkit-tap-highlight-color: transparent;
+            min-height: 100vh;
+            overflow-x: hidden;
         }
 
-        h2 { margin: 0 0 16px 0; font-size: 24px; }
-        
-        .category-title {
-            font-size: 14px;
-            text-transform: uppercase;
-            color: var(--text-secondary);
-            margin: 24px 0 8px 8px;
-            font-weight: 600;
+        /* Animated background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
         }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 20% 50%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 20%, rgba(236, 72, 153, 0.08) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
         }
 
-        .card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            min-height: 100px;
-            transition: transform 0.1s;
-            cursor: pointer;
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(-30px, -30px) rotate(120deg); }
+            66% { transform: translate(30px, -20px) rotate(240deg); }
         }
 
-        .card:active { transform: scale(0.98); }
-
-        .card-name { font-size: 15px; font-weight: 600; line-height: 1.3; }
-        .card-price { 
-            margin-top: 8px; 
-            font-size: 13px; 
-            color: var(--accent); 
-            font-weight: 700;
-        }
-
-        /* Модальное окно покупки */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.7);
-            display: none;
-            align-items: center;
-            justify-content: center;
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
             z-index: 100;
         }
 
-        .modal {
-            background: var(--card-bg);
-            width: 85%;
-            max-width: 320px;
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* Container */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Game Cards Grid */
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .game-card {
+            background: var(--bg-card);
             border-radius: 16px;
-            padding: 24px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.05) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-purple);
+            box-shadow: 0 10px 30px rgba(124, 58, 237, 0.3);
+        }
+
+        .game-card:hover::before {
+            opacity: 1;
+        }
+
+        .game-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 15px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            position: relative;
+        }
+
+        .game-icon.brawl { background: linear-gradient(135deg, #ff6b6b, #ffa502); }
+        .game-icon.standoff { background: linear-gradient(135deg, #2ed573, #1e90ff); }
+        .game-icon.steam { background: linear-gradient(135deg, #1e3799, #0c2461); }
+        .game-icon.roblox { background: linear-gradient(135deg, #ff4757, #ff6348); }
+        .game-icon.pubg { background: linear-gradient(135deg, #ffa502, #ff6348); }
+        .game-icon.cod { background: linear-gradient(135deg, #5352ed, #3742fa); }
+
+        .game-name {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 5px;
             text-align: center;
         }
 
-        input {
-            width: 100%;
-            padding: 12px;
-            margin: 16px 0;
-            border-radius: 8px;
-            border: 1px solid #3a3a3c;
-            background: #1c1c1e;
-            color: white;
-            font-size: 18px;
-            box-sizing: border-box;
+        .game-price {
+            color: var(--accent-green);
+            font-size: 12px;
             text-align: center;
+            font-weight: 500;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            border: 1px solid var(--border-color);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-header h2 {
+            font-size: 22px;
+            margin-bottom: 10px;
+        }
+
+        .modal-header .price-tag {
+            display: inline-block;
+            background: var(--gradient-1);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+        }
+
+        .total-display {
+            background: var(--bg-card);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .total-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .total-amount {
+            font-size: 24px;
+            font-weight: 700;
+            background: var(--gradient-2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .btn {
             width: 100%;
-            padding: 14px;
+            padding: 15px;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
         }
 
-        .btn-primary { background: var(--accent); color: white; }
-        .btn-cancel { background: transparent; color: var(--text-secondary); margin-top: 8px; }
+        .btn-primary {
+            background: var(--gradient-1);
+            color: white;
+        }
 
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(124, 58, 237, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        /* Steam currencies */
+        .currency-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .currency-item {
+            background: var(--bg-card);
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .currency-item:hover {
+            border-color: var(--accent-blue);
+            transform: translateX(5px);
+        }
+
+        .currency-name {
+            font-weight: 600;
+        }
+
+        .currency-price {
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        /* Success message */
+        .success-message {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .success-message.active {
+            display: block;
+            animation: scaleIn 0.5s ease;
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--success);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 40px;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .games-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .game-card {
+                padding: 15px;
+            }
+
+            .game-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 28px;
+            }
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: none;
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--accent-purple);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        .spinner.active {
+            display: block;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
+    <div class="bg-animation"></div>
 
-    <h2 id="greeting">🎮 Магазин</h2>
-    
-    <div class="category-title">Игры</div>
-    <div class="grid" id="games-grid"></div>
+    <div class="header">
+        <h1>🎮 Game Shop</h1>
+        <p>Быстрый донат в любимые игры</p>
+    </div>
 
-    <div class="category-title">Steam Валюты</div>
-    <div class="grid" id="steam-grid"></div>
-
-    <!-- Модалка -->
-    <div class="modal-overlay" id="modal">
-        <div class="modal">
-            <div id="modal-title" style="font-size:18px; font-weight:700;"></div>
-            <div id="modal-price" style="color:var(--accent); margin-top:4px;"></div>
-            
-            <input type="number" id="amount-input" placeholder="Количество" min="1" step="any">
-            <div id="total-display" style="margin-bottom:16px; font-size:14px; color:var(--text-secondary);">
-                Итого: 0 ₽
-            </div>
-
-            <button class="btn btn-primary" onclick="submitOrder()">Купить</button>
-            <button class="btn btn-cancel" onclick="closeModal()">Отмена</button>
+    <div class="container">
+        <div class="games-grid" id="gamesGrid">
+            <!-- Games will be inserted here -->
         </div>
     </div>
 
-<script>
-    const tg = window.Telegram.WebApp;
-    tg.expand(); // Раскрыть на весь экран
+    <!-- Order Modal -->
+    <div class="modal" id="orderModal">
+        <div class="modal-content">
+            <div id="orderForm">
+                <div class="modal-header">
+                    <h2 id="modalTitle">Название игры</h2>
+                    <span class="price-tag" id="modalPrice">0₽ за ед.</span>
+                </div>
 
-    // Данные из твоего бота
-    const GAMES = {
-        "brawl_gems": { name: "💎 Brawl Stars", price: 1.2 },
-        "standoff_gold": { name: "🪙 Standoff 2", price: 0.05 },
-        "robux": { name: "🟥 Roblox", price: 0.9 },
-        "uc_pubg": { name: "🔫 PUBG Mobile", price: 1.1 },
-        "cp_cod": { name: "🎯 CoD Mobile", price: 1.3 },
-    };
+                <div class="input-group">
+                    <label for="amount">Количество:</label>
+                    <input type="number" id="amount" placeholder="Введите количество" min="1" max="100000">
+                </div>
 
-    const STEAM = {
-        "steam_rub": { name: "🇷🇺 Рубли RUB", price: 1.0 },
-        "steam_usd": { name: "💵 Доллары USD", price: 92.0 },
-        "steam_eur": { name: "💶 Евро EUR", price: 100.0 },
-        "steam_uah": { name: "🇺🇦 Гривны UAH", price: 2.3 },
-        "steam_kzt": { name: "🇰🇿 Тенге KZT", price: 0.18 },
-        "steam_gbp": { name: "💷 Фунты GBP", price: 117.0 },
-        "steam_cny": { name: "🇨🇳 Юани CNY", price: 12.7 },
-    };
+                <div class="total-display">
+                    <span class="total-label">Итого:</span>
+                    <span class="total-amount" id="totalAmount">0₽</span>
+                </div>
 
-    let currentItem = null;
+                <button class="btn btn-primary" onclick="submitOrder()">✅ Оформить заказ</button>
+                <button class="btn btn-secondary" onclick="closeModal()">❌ Отмена</button>
+            </div>
 
-    // Рендер карточек
-    function renderGrid(items, containerId) {
-        const container = document.getElementById(containerId);
-        Object.entries(items).forEach(([key, item]) => {
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.innerHTML = `
-                <div class="card-name">${item.name}</div>
-                <div class="card-price">${item.price} ₽ / ед.</div>
-            `;
-            card.onclick = () => openModal(key, item);
-            container.appendChild(card);
-        });
-    }
+            <div class="success-message" id="successMessage">
+                <div class="success-icon">✓</div>
+                <h3>Заказ создан!</h3>
+                <p style="color: var(--text-secondary); margin-top: 10px;">Администратор скоро свяжется с вами</p>
+                <button class="btn btn-primary" onclick="closeModal()" style="margin-top: 20px;">Закрыть</button>
+            </div>
 
-    renderGrid(GAMES, 'games-grid');
-    renderGrid(STEAM, 'steam-grid');
+            <div class="spinner" id="spinner"></div>
+        </div>
+    </div>
 
-    // Логика модалки
-    function openModal(key, item) {
-        currentItem = { key, ...item };
-        document.getElementById('modal-title').innerText = item.name;
-        document.getElementById('modal-price').innerText = `${item.price} ₽ за единицу`;
-        document.getElementById('amount-input').value = '';
-        document.getElementById('total-display').innerText = 'Итого: 0 ₽';
-        document.getElementById('modal').style.display = 'flex';
-        document.getElementById('amount-input').focus();
-    }
+    <!-- Steam Currencies Modal -->
+    <div class="modal" id="steamModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🎮 Steam</h2>
+                <p style="color: var(--text-secondary); margin-top: 10px;">Выберите валюту</p>
+            </div>
 
-    function closeModal() {
-        document.getElementById('modal').style.display = 'none';
-        currentItem = null;
-    }
+            <div class="currency-list" id="currencyList">
+                <!-- Currencies will be inserted here -->
+            </div>
 
-    // Подсчет итого
-    document.getElementById('amount-input').addEventListener('input', (e) => {
-        if (!currentItem) return;
-        const val = parseFloat(e.target.value) || 0;
-        const total = (val * currentItem.price).toFixed(2);
-        document.getElementById('total-display').innerText = `Итого: ${total} ₽`;
-    });
+            <button class="btn btn-secondary" onclick="closeSteamModal()" style="margin-top: 20px;">◀️ Назад</button>
+        </div>
+    </div>
 
-    // Отправка заказа в бота
-    function submitOrder() {
-        const amount = parseFloat(document.getElementById('amount-input').value);
-        if (!amount || amount <= 0) {
-            tg.showAlert("Введите корректное количество!");
-            return;
+    <script>
+        // Initialize Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+
+        // Games data with prices from bot
+        const games = {
+            brawl_gems: { 
+                name: "Brawl Stars", 
+                subtitle: "Гемы",
+                icon: "💎",
+                price: 1.2,
+                gradient: "linear-gradient(135deg, #ff6b6b, #ffa502)"
+            },
+            standoff_gold: { 
+                name: "Standoff 2", 
+                subtitle: "Голда",
+                icon: "🪙",
+                price: 0.05,
+                gradient: "linear-gradient(135deg, #2ed573, #1e90ff)"
+            },
+            steam: { 
+                name: "Steam", 
+                subtitle: "Пополнение",
+                icon: "🎮",
+                price: null,
+                gradient: "linear-gradient(135deg, #1e3799, #0c2461)"
+            },
+            robux: { 
+                name: "Roblox", 
+                subtitle: "Робуксы",
+                icon: "🟥",
+                price: 0.9,
+                gradient: "linear-gradient(135deg, #ff4757, #ff6348)"
+            },
+            uc_pubg: { 
+                name: "PUBG Mobile", 
+                subtitle: "UC",
+                icon: "🔫",
+                price: 1.1,
+                gradient: "linear-gradient(135deg, #ffa502, #ff6348)"
+            },
+            cp_cod: { 
+                name: "CoD Mobile", 
+                subtitle: "CP",
+                icon: "🎯",
+                price: 1.3,
+                gradient: "linear-gradient(135deg, #5352ed, #3742fa)"
+            }
+        };
+
+        const steamCurrencies = {
+            steam_rub: { name: "🇷🇺 Рубли RUB", price: 1.0 },
+            steam_usd: { name: "💵 Доллары USD", price: 92.0 },
+            steam_eur: { name: "💶 Евро EUR", price: 100.0 },
+            steam_uah: { name: "🇺🇦 Гривны UAH", price: 2.3 },
+            steam_kzt: { name: "🇰🇿 Тенге KZT", price: 0.18 },
+            steam_gbp: { name: "💷 Фунты GBP", price: 117.0 },
+            steam_cny: { name: "🇨🇳 Юани CNY", price: 12.7 }
+        };
+
+        let selectedGame = null;
+        let selectedCurrency = null;
+
+        // Render games grid
+        function renderGames() {
+            const grid = document.getElementById('gamesGrid');
+            grid.innerHTML = '';
+
+            Object.entries(games).forEach(([key, game]) => {
+                const card = document.createElement('div');
+                card.className = 'game-card';
+                card.onclick = () => selectGame(key);
+
+                const priceText = game.price ? `${game.price}₽` : 'Выбрать';
+
+                card.innerHTML = `
+                    <div class="game-icon" style="background: ${game.gradient}">
+                        ${game.icon}
+                    </div>
+                    <div class="game-name">${game.name}</div>
+                    <div class="game-price">${game.subtitle} • ${priceText}</div>
+                `;
+
+                grid.appendChild(card);
+            });
         }
 
-        const total = (amount * currentItem.price).toFixed(2);
-        
-        // Формируем строку, которую бот сможет распарсить или просто показать
-        const orderData = JSON.stringify({
-            action: "new_order",
-            item_key: currentItem.key,
-            item_name: currentItem.name,
-            amount: amount,
-            total: total
+        // Select game
+        function selectGame(key) {
+            selectedGame = key;
+            const game = games[key];
+
+            if (key === 'steam') {
+                showSteamModal();
+                return;
+            }
+
+            document.getElementById('modalTitle').textContent = `${game.icon} ${game.name}`;
+            document.getElementById('modalPrice').textContent = `${game.price}₽ за ед.`;
+            document.getElementById('amount').value = '';
+            document.getElementById('totalAmount').textContent = '0₽';
+            
+            document.getElementById('orderModal').classList.add('active');
+            document.getElementById('orderForm').style.display = 'block';
+            document.getElementById('successMessage').classList.remove('active');
+        }
+
+        // Show Steam currencies
+        function showSteamModal() {
+            const list = document.getElementById('currencyList');
+            list.innerHTML = '';
+
+            Object.entries(steamCurrencies).forEach(([key, currency]) => {
+                const item = document.createElement('div');
+                item.className = 'currency-item';
+                item.onclick = () => selectCurrency(key, currency);
+                item.innerHTML = `
+                    <span class="currency-name">${currency.name}</span>
+                    <span class="currency-price">${currency.price}₽</span>
+                `;
+                list.appendChild(item);
+            });
+
+            document.getElementById('steamModal').classList.add('active');
+        }
+
+        // Select Steam currency
+        function selectCurrency(key, currency) {
+            selectedCurrency = key;
+            document.getElementById('modalTitle').textContent = currency.name;
+            document.getElementById('modalPrice').textContent = `${currency.price}₽ за ед.`;
+            document.getElementById('amount').value = '';
+            document.getElementById('totalAmount').textContent = '0₽';
+            
+            closeSteamModal();
+            document.getElementById('orderModal').classList.add('active');
+            document.getElementById('orderForm').style.display = 'block';
+            document.getElementById('successMessage').classList.remove('active');
+        }
+
+        // Calculate total
+        document.getElementById('amount').addEventListener('input', function() {
+            const amount = parseFloat(this.value) || 0;
+            let price;
+
+            if (selectedCurrency) {
+                price = steamCurrencies[selectedCurrency].price;
+            } else if (selectedGame) {
+                price = games[selectedGame].price;
+            }
+
+            const total = (amount * price).toFixed(2);
+            document.getElementById('totalAmount').textContent = `${total}₽`;
         });
 
-        // sendData возвращает пользователя в чат и отправляет эту строку как сообщение
-        tg.sendData(orderData);
-    }
+        // Submit order
+        async function submitOrder() {
+            const amount = parseFloat(document.getElementById('amount').value);
+            
+            if (!amount || amount <= 0) {
+                tg.showAlert('Введите корректное количество!');
+                return;
+            }
 
-    // Адаптация цветов под тему пользователя
-    if (tg.colorScheme === 'light') {
-        document.documentElement.style.setProperty('--bg-color', '#f2f2f7');
-        document.documentElement.style.setProperty('--card-bg', '#ffffff');
-        document.documentElement.style.setProperty('--text-primary', '#000000');
-        document.documentElement.style.setProperty('--text-secondary', '#8e8e93');
-    }
-</script>
+            if (amount > 100000) {
+                tg.showAlert('Максимальное количество: 100,000');
+                return;
+            }
+
+            let itemKey, itemName, price, total;
+
+            if (selectedCurrency) {
+                itemKey = selectedCurrency;
+                itemName = steamCurrencies[selectedCurrency].name;
+                price = steamCurrencies[selectedCurrency].price;
+            } else {
+                itemKey = selectedGame;
+                itemName = `${games[selectedGame].icon} ${games[selectedGame].name}`;
+                price = games[selectedGame].price;
+            }
+
+            total = (amount * price).toFixed(2);
+
+            // Show loading
+            document.getElementById('orderForm').style.display = 'none';
+            document.getElementById('spinner').classList.add('active');
+
+            // Send data to bot
+            const orderData = {
+                action: 'new_order',
+                item_key: itemKey,
+                item_name: itemName,
+                amount: amount,
+                total: parseFloat(total)
+            };
+
+            try {
+                tg.sendData(JSON.stringify(orderData));
+                
+                // Show success after short delay
+                setTimeout(() => {
+                    document.getElementById('spinner').classList.remove('active');
+                    document.getElementById('successMessage').classList.add('active');
+                }, 1000);
+            } catch (error) {
+                console.error('Error sending order:', error);
+                tg.showAlert('Ошибка при создании заказа. Попробуйте позже.');
+                document.getElementById('spinner').classList.remove('active');
+                document.getElementById('orderForm').style.display = 'block';
+            }
+        }
+
+        // Close modals
+        function closeModal() {
+            document.getElementById('orderModal').classList.remove('active');
+            selectedGame = null;
+            selectedCurrency = null;
+        }
+
+        function closeSteamModal() {
+            document.getElementById('steamModal').classList.remove('active');
+        }
+
+        // Close modal on outside click
+        document.getElementById('orderModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        document.getElementById('steamModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSteamModal();
+            }
+        });
+
+        // Initialize
+        renderGames();
+
+        // Set theme colors for Telegram
+        tg.setHeaderColor('#0f0f1a');
+        tg.setBackgroundColor('#0f0f1a');
+    </script>
 </body>
 </html>
